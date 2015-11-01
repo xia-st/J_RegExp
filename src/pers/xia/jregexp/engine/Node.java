@@ -15,6 +15,7 @@ public class Node implements Cloneable
     private boolean isReverse = false;  //数据是否反向（即除value外的字符才算匹配）
 	private Node lChild = null;
 	private Node rChild = null;
+    
 
     //设置字符或者操作
 	Node(Object value)

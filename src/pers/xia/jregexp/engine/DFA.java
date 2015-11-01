@@ -33,7 +33,7 @@ public class DFA
 	
 	public static void main(String[] args)
 	{
-		String s = "[\\[w\\d]";
+		String s = "^\\b234\\b$";
         GrammerTree tree = new GrammerTree(s);
 		tree.showTree();
 	}

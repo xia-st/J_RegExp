@@ -14,9 +14,4 @@ public enum Operator
 	LB,			// [
 	RB,			// ]
 	DOT,		// .
-	S,			// \s
-	NS,			// \S
-	W, 			// \w
-	NW, 		//\W
-	
 }

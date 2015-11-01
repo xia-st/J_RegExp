@@ -13,71 +13,80 @@ public class GrammerTree
         Logger.getLogger(GrammerTree.class.getName());
 
 
-    Stack<Character> inputStack = new Stack<Character>();
+//    Stack<Character> inputStack = new Stack<Character>();
+    String reString;
 	Node head = null;
 	Stack<Node> resultStack = new Stack<Node>();
 
-    private char cur;
-    private boolean haveNextC = false;
+    int cur = 0;
 
     char getNextC()
     {
-        if(this.haveNextC)
-        {
-            this.haveNextC = false;
-            return this.cur;
-        }
-        if(this.inputStack.empty())
+        if(cur < 0)   
         {
             return '\0';
         }
-        return this.inputStack.pop();
+            return this.reString.charAt(cur--);
     }
 
     boolean backupC(char c)
     { 
-        if(this.haveNextC)
+        if (c == '\0')
         {
+            return true;
+        }
+        if(this.cur >= this.reString.length())
+        {
+            log.warning("ERROR: cur point out of range");
             return false;
         }
-        this.cur = c;
-        this.haveNextC = true;
+        this.cur++;
         return true;
     }
 
 	GrammerTree(String input)
 	{
         log.setLevel(Level.ALL);
-		for (int i = 0; i < input.length(); i++)
-		{
-			inputStack.push(input.charAt(i));
-		}
+        
+        this.reString = input;
+        this.cur = this.reString.length() - 1;
 		if (!this.createGrammerTree())
 		{
             log.warning("ERROR");
         }
 	}
+    
+    private boolean simplyfy()
+    {
+        ArrayList<Character> singleChars = new ArrayList<Character>();
+        ArrayList<Integer[]> multiChars = new ArrayList<Integer[]>();
+        return true;
+    }
 	
 	private boolean createGrammerTree()
 	{
 		Node node = null;
 		Node preNode = null;
 		Node optNode = null;
+        char c1, c2; //保存预读字符
 		
-        char c = this.getNextC();
-		while (c != '\0')
+		while (true)
 		{
+            char c = this.getNextC();
             boolean haveNode = false;
             node = null;
 
+            if (c == '\0') break;
+
             //如果下一个是“\”符号且再下一个不是“\”符号的话则对\X进行操作
-            if(!inputStack.empty() && 
-                    inputStack.get(inputStack.size() - 1) == '\\')
+            c1 = this.getNextC();
+            c2 = this.getNextC();
+            if (c1 == '\\' && c2 != '\\')
             {
-                //TODO 对\X 这种格式进行处理。
-                inputStack.pop();
+                this.backupC(c2);
 
                 haveNode = true;
+
                 if(c == 's')
                 {
                     node = DefaultNode.sNode.clone();
@@ -85,6 +94,7 @@ public class GrammerTree
 
                 if(c == 'b')
                 {
+                    node = new Node(MetaCharacter.B);
                 }
 
                 if(c == 'w')
@@ -104,6 +114,7 @@ public class GrammerTree
 
                 if(c == 'B')
                 {
+                    node = new Node(MetaCharacter.NB);
                 }
 
                 if(c == 'W')
@@ -115,16 +126,25 @@ public class GrammerTree
                 {
                     node = DefaultNode.DNode.clone();
                 }
+
+                node = new Node(c);
+            }
+            else
+            {
+                this.backupC(c2);
+                this.backupC(c1);
             }
 
             if (c == '^')
             {
-                //TODO 匹配字符串开始
+                node = new Node(MetaCharacter.START);
+                haveNode = true;
             }
 
             if (c == '$')
             {
-                //TODO 匹配字符串结束
+                node = new Node(MetaCharacter.END);
+                haveNode = true;
             }
 
 			if (c == '(' )
@@ -220,9 +240,23 @@ public class GrammerTree
                 HashSet<Character> oneChars = new HashSet<Character>();
                 HashSet<char[]> multiChars = new HashSet<char[]>();
                 ArrayList<Character> list = new ArrayList<Character>(); //保存括号内字符
-                while(!inputStack.empty())
+                while(true)
                 {
-                    c = inputStack.pop();
+                    c = this.getNextC();
+                    if (c == '\0')
+                    {
+                        break;
+                    }
+
+                    c1 = this.getNextC();
+
+                    if (c1 == '\\')
+                    {
+                        list.add(c);
+                        continue;
+                    }
+                    this.backupC(c1);
+
                     if(c == '[') break;
                     list.add(c);
                 }
@@ -266,7 +300,7 @@ public class GrammerTree
                 {
                     //获取set中的一个数据用于初始化node。
                     Iterator<Character> iter = oneChars.iterator();
-                    char c1 = iter.next();
+                    c1 = iter.next();
                     node = new Node(c1);
                     oneChars.remove(c1);
                     for(char oneChar: oneChars)
@@ -282,8 +316,8 @@ public class GrammerTree
                 if(node == null && !multiChars.isEmpty())
                 {
                     Iterator<char[]> iter = multiChars.iterator();
-                    char []c1 = iter.next();
-                    node = new Node(c1[0], c1[1]);
+                    char []multiC = iter.next();
+                    node = new Node(multiC[0], multiC[1]);
                     multiChars.remove(c1);
                 }
                 for(char[] multiChar: multiChars)
@@ -308,9 +342,12 @@ public class GrammerTree
                 int start = 0;  //起始位置。
                 int end = 0;   //结束位置
 
-                for (int i = 1;!inputStack.empty(); i*=10)
+                for (int i = 1;; i*=10)
                 {
-                    c = inputStack.pop();
+                    c = this.getNextC();
+
+                    if(c == '\0') break;
+
                     if(c == ',' || c == '{')
                     {
                         break;
@@ -323,7 +360,7 @@ public class GrammerTree
                     }
                     end += (c - '0') * i;
                 }
-                if(inputStack.empty())
+                if(c == '\0')
                 {
                     log.warning("表达式不完整");
                     head = null;
@@ -339,7 +376,9 @@ public class GrammerTree
 
                 for(int i = 1;; i*=10)
                 {
-                    c = inputStack.pop();
+                    c = this.getNextC();
+                    if (c == '\0') break;
+
                     if(c == '{')
                     {
                         break;
@@ -352,8 +391,8 @@ public class GrammerTree
                     }
                     start += (c - '0') * i;
                 }
-                //由于在{}表达式前面必须还要存在元素，所以可以假设必须不为空
-                if(inputStack.empty())
+                
+                if(c == '\0')
                 {
                     log.warning("表达式不完整");
                     head = null;
