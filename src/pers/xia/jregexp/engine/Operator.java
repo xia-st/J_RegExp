@@ -14,4 +14,6 @@ public enum Operator
 	LB,			// [
 	RB,			// ]
 	DOT,		// .
+	
+	NOT,		// 用来保存取反的情况。
 }

@@ -6,25 +6,27 @@ package pers.xia.jregexp.engine;
  */
 public class Node implements Cloneable
 {
-	Object value;
-    Object value2;
-	private boolean isOperator = false; //是否为操作符
-    private boolean isRange = false;    //是否为重复次数范围
+	public Object value;
+    public Object value2;
+    public Node fatherNode;
+
 	private boolean isTree = false;     //是否为一颗树
-    private boolean isMulti = false;    //是否为多可选项
-    private boolean isReverse = false;  //数据是否反向（即除value外的字符才算匹配）
 	private Node lChild = null;
 	private Node rChild = null;
+    private NodeType nodeType = null;
     
-
     //设置字符或者操作
 	Node(Object value)
 	{
 		this.value = value;
 		if(this.value instanceof Operator)
 		{
-			this.isOperator = true;
+            this.nodeType = NodeType.OPERATOR;
 		}
+        else
+        {
+            this.nodeType = NodeType.CHAR;
+        }
 	}
 
     //设置连续的字符结点或者范围结点
@@ -34,25 +36,31 @@ public class Node implements Cloneable
         this.value2 = value2;
         if(this.value instanceof Character && this.value2 instanceof Character)
         {
-            this.isMulti = true;
+            this.nodeType = NodeType.MULTICHARS;
         }
         else if(this.value instanceof Integer && this.value2 instanceof Integer)
         {
-            this.isRange = true;
-            this.isOperator = true;
+            this.nodeType = NodeType.RANGE;
         }
+    }
+
+    public boolean setNodeType(NodeType nodeType)
+    {
+        this.nodeType = nodeType;
+        return true;
     }
 
 	
 	Node getLChild()
 	{
-		return this.lChild;
+        return this.lChild;
 	}
 	
 	boolean setLChild(Node node)
 	{
 		this.lChild = node;
 		this.isTree = true;
+        node.fatherNode = this;
 		return true;
 	}
 	
@@ -65,6 +73,7 @@ public class Node implements Cloneable
 	{
 		this.rChild = node;
 		this.isTree = true;
+        node.fatherNode = this;
 		return true;
 	}
 
@@ -73,40 +82,19 @@ public class Node implements Cloneable
         return this.isTree;
     }
 
-    boolean isOperator()
+    NodeType nodeType()
     {
-        return this.isOperator;
-    }
-
-    boolean isRange()
-    {
-        return this.isRange;
-    }
-
-    boolean isMulti()
-    {
-        return this.isMulti;
-    }
-
-    boolean isReverse()
-    {
-        return this.isReverse;
-    }
-
-    boolean setReverse(boolean isReverse)
-    {
-        this.isReverse = isReverse;
-        return true;
+        return this.nodeType;
     }
 
     public String toString()
     {
-        if(this.isRange)
+        if(this.nodeType == NodeType.RANGE)
         {
             return "{" + String.valueOf(this.value) + "," + 
                 String.valueOf(this.value2) + "}";
         }
-        if(this.isMulti)
+        if(this.nodeType == NodeType.MULTICHARS)
         {
             return value + "-" + value2;
         }

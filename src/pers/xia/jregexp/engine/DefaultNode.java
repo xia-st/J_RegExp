@@ -65,7 +65,6 @@ public final class DefaultNode
             for(char oneChar: oneChars)
             {
                 preNode = new Node(oneChar);
-                preNode.setReverse(reverse);
                 optNode = new Node(Operator.OR);
                 optNode.setLChild(node);
                 optNode.setRChild(preNode);
@@ -83,11 +82,17 @@ public final class DefaultNode
         for(char[] multiChar: multiChars)
         {
             preNode = new Node(multiChar[0], multiChar[1]);
-            preNode.setReverse(reverse);
             optNode = new Node(Operator.OR);
             optNode.setLChild(node);
             optNode.setRChild(preNode);
             node = optNode;
+        }
+
+        if (reverse)
+        {
+            Node notNode = new Node(Operator.NOT);
+            notNode.setLChild(node);
+            node = notNode;
         }
 
         return node;

@@ -33,8 +33,10 @@ public class DFA
 	
 	public static void main(String[] args)
 	{
-		String s = "^\\b234\\b$";
+        String s = "[^1-9a-bf-g]";
         GrammerTree tree = new GrammerTree(s);
+        int []charClass = new int[65536];
+        tree.simplify(charClass);
 		tree.showTree();
 	}
 	
