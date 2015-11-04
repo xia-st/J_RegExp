@@ -33,10 +33,10 @@ public class DFA
 	
 	public static void main(String[] args)
 	{
-        String s = "[^1-9a-bf-g]";
+        String s = "[a-dd-he-ha-z]";
         GrammerTree tree = new GrammerTree(s);
-        int []charClass = new int[65536];
-        tree.simplify(charClass);
+		tree.showTree();
+        tree.simplify();
 		tree.showTree();
 	}
 	

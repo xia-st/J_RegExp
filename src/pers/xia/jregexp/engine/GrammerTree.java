@@ -1,9 +1,8 @@
 package pers.xia.jregexp.engine;
 
-import java.text.Collator;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.Stack;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -13,11 +12,17 @@ import java.util.Comparator;
 
 public class GrammerTree
 {
+    //为什么Java中enum类型不能定义在函数内部？？！！！明明内部类都能创建！！！
+    //Location只在splitMulti中使用，FRONT表示一个字符范围的开头，BELOW表示结尾
+    //BOTH表示同时在两边存在
+    private enum Location{FRONT, BELOW, BOTH};
+
     private static final Logger log =
         Logger.getLogger(GrammerTree.class.getName());
 //    Stack<Character> inputStack = new Stack<Character>();
     String reString;
-	Node head = null;
+	public Node head = null;
+    public int[] charClass = null;
 	Stack<Node> resultStack = new Stack<Node>();
     private int cur = 0;
 
@@ -60,14 +65,24 @@ public class GrammerTree
     //将范围字符和单个字符进行分割，并返回由小到大排列分割后的范围字符
     private ArrayList<Integer[]> splitMulti(HashSet<Integer[]> multiChars, HashSet<Integer>singleChars)
     {
+        if(multiChars.isEmpty())
+        {
+            ArrayList<Integer> sc = new ArrayList<Integer>(singleChars);
+            ArrayList<Integer[]> mc2 = new ArrayList<Integer[]>(); //保存加上单个结点后的数据
+            Collections.sort(sc);
+
+            for(int s: sc)
+            {
+                mc2.add(new Integer[]{s, s});
+
+            }
+            return mc2;
+        }
         ArrayList<Integer[]> mc = new ArrayList<Integer[]>(multiChars);
         ArrayList<Integer[]> mc1 = new ArrayList<Integer[]>();
 
-        if(mc.size() <= 0)
-        {
-            log.warning("multi chars was not have any elements");
-            return null;
-        }
+        //numMap用于记录数字在分割块中的位置
+        HashMap<Integer, Location> numMap = new HashMap<Integer, Location>();
 
         //将mc中的数据按照第一个值由小到大进行排序
         Collections.sort(mc, new Comparator<Integer []>()
@@ -82,49 +97,119 @@ public class GrammerTree
 
         //找分割点，分割块中所有的数据拿出来然后从小到大分割
         int maxNum = mc.get(0)[1];
-        HashSet<Integer> nums = new HashSet<Integer>();
-        nums.add(mc.get(0)[0]);
-        nums.add(mc.get(0)[1]);
-        for(int i = 1; i < mc.size(); i++)
+        for(int i = 0; i < mc.size(); i++)
         {
             if(mc.get(i)[0] <= maxNum)
             {
                 maxNum = maxNum > mc.get(i)[1] ? maxNum : mc.get(i)[1];
-                nums.add(mc.get(i)[0]);
-                nums.add(mc.get(i)[1]);
+                
+                //将mc中的两端的值放入到numMap中
+                if(numMap.containsKey(mc.get(i)[0]))
+                {
+                    if(numMap.get(mc.get(i)[0]) == Location.BELOW)
+                    {
+                        numMap.put(mc.get(i)[0], Location.BOTH);
+                    }
+                }
+                else
+                {
+                    numMap.put(mc.get(i)[0], Location.FRONT);
+                }
+
+                if(numMap.containsKey(mc.get(i)[1]))
+                {
+                    if(numMap.get(mc.get(i)[1]) == Location.FRONT)
+                    {
+                        numMap.put(mc.get(i)[1], Location.BOTH);
+                    }
+                }
+                else
+                {
+                    numMap.put(mc.get(i)[1], Location.BELOW);
+                }
+
                 continue;
             }
 
             //将set转换为list，并排序，方便接下来的运算。
-            ArrayList<Integer> numsList = new ArrayList<Integer>(nums);
+            ArrayList<Integer> numsList = new ArrayList<Integer>(numMap.keySet());
             Collections.sort(numsList);
 
             //将这些数据从小到大对数据进行分割。
             for(int j = 1; j < numsList.size(); j++)
             {
-                mc1.add(new Integer[]{numsList.get(j-1), numsList.get(j)});
+                int front = numsList.get(j-1);
+                int below = numsList.get(j);
+
+                if(numMap.get(front) == Location.BELOW)
+                {
+                    //如果某个点是mutliChar的结束位置，那么该点需要放到
+                    //前一个结点中，此处的点需要后移一位
+                    front++;
+                }
+                else if(numMap.get(front) == Location.BOTH)
+                {
+                    //如果某个点分别是两个multiChar的结束位置和起始位置，
+                    //那么需要把这个点单独取出来
+                    mc1.add(new Integer[]{front, front});
+                    front++;
+                }
+
+                if(numMap.get(below) == Location.FRONT ||
+                        numMap.get(below) == Location.BOTH)
+                {
+                    //同上，BOTH的操作放到下一个结点进行
+                    below--;
+                }
+                if(front > below)
+                {
+                    continue;
+                }
+                mc1.add(new Integer[]{front, below});
             }
-            nums.clear();
-            nums.add(mc.get(i)[0]);
-            nums.add(mc.get(i)[1]);
 
             //设置最大值为下一个字符范围的较大值。
             maxNum = mc.get(i)[1];
+            i--;
         }
 
         //循环结束后对nums中剩余的数据再进行一次操作。
-        ArrayList<Integer> numsList = new ArrayList<Integer>(nums);
+        ArrayList<Integer> numsList = new ArrayList<Integer>(numMap.keySet());
         Collections.sort(numsList);
 
         //将这些数据从小到大对数据进行分割。
         for(int j = 1; j < numsList.size(); j++)
         {
-            mc1.add(new Integer[]{numsList.get(j-1), numsList.get(j)});
-            if(mc1.size()>1 && 
-                    mc1.get(mc1.size()-1)[0] == mc1.get(mc1.size()-2)[1])
+            //TODO
+            int front = numsList.get(j-1);
+            int below = numsList.get(j);
+
+            if(numMap.get(front) == Location.BELOW)
             {
-                mc1.get(mc1.size()-1)[0]++;
+                //如果某个点是mutliChar的结束位置，那么该点需要放到
+                //前一个结点中，此处的点需要后移一位
+                front++;
             }
+            else if(numMap.get(front) == Location.BOTH)
+            {
+                //如果某个点分别是两个multiChar的结束位置和起始位置，
+                //那么需要把这个点单独取出来
+                mc1.add(new Integer[]{front, front});
+                front++;
+            }
+
+            if(numMap.get(below) == Location.FRONT ||
+                    numMap.get(below) == Location.BOTH)
+            {
+                //同上，BOTH的操作放到下一个结点进行
+                below--;
+            }
+
+            if(front > below)
+            {
+                continue;
+            }
+            mc1.add(new Integer[]{front, below});
         }
 
         //将single chars中的值也加入表中
@@ -291,45 +376,117 @@ public class GrammerTree
                 {
                     if(a[0] - minNum > 0)
                     {
-                        antiList.add(new Integer[]{minNum, a[0]});
+                        antiList.add(new Integer[]{minNum, a[0]-1});
                     }
                     minNum = a[1] + 1;
                 }
                 //把最后的数字加上去
-                if(minNum <= 65536)
+                if(minNum <= 65535)
                 {
                     //XXX java默认采用unicode编码，为两个字节，如果改为utf-8的话则会
                     //变成3个字节，这里假设了长度为2个字节
-                    antiList.add(new Integer[]{minNum, 65536}); 
+                    antiList.add(new Integer[]{minNum, 65535}); 
                 }
 
                 //拼接结点
-                Node belowNode= new Node(antiList.get(0)[0], antiList.get(0)[1]);
-                belowNode.setNodeType(NodeType.MULTICHARS);
+                Node preNode= new Node(antiList.get(0)[0], antiList.get(0)[1]);
+                preNode.setNodeType(NodeType.MULTICHARS);
                 Node nextNode = null;
                 Node optNode = null;
                 for(int i = 1; i < antiList.size(); i++)
                 {
                     nextNode = new Node(antiList.get(i)[0], antiList.get(i)[1]);
-                    belowNode.setNodeType(NodeType.MULTICHARS);
+                    nextNode.setNodeType(NodeType.MULTICHARS);
                     optNode = new Node(Operator.OR);
-                    //TODO
+                    optNode.setLChild(preNode);
+                    optNode.setRChild(nextNode);
+                    preNode = optNode;
                 }
 
+                if(notNode == this.head)
+                {
+                    this.head = preNode;
+                }
+                else
+                {
+                    Node fatherNode = notNode.fatherNode;
+                    if(fatherNode.getLChild() == notNode)
+                    {
+                        fatherNode.setLChild(preNode);
+                    }
+                    else if(fatherNode.getRChild() == notNode)
+                    {
+                        fatherNode.setRChild(preNode);
+                    }
+                    else
+                    {
+                        log.warning("notNode was not son of it's father");
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    private boolean dealMetaChar()
+    {
+        //FIXME 下面代码删除了所有meta character结点，需要将B结点改为可识别的Node
+        Node node = head;
+        Stack <Node>stack = new Stack<Node>();
+        stack.push(head);
+
+        while(!stack.empty())
+        {
+            node = stack.pop();
+            if(node.nodeType() == NodeType.OPERATOR)
+            {
+                if(node.getLChild() != null) stack.push(node.getLChild());
+                if(node.getRChild() != null) stack.push(node.getRChild());
+                continue;
+            }
+            if(node.value instanceof MetaCharacter)
+            {
+                if(node == this.head)
+                {
+                    this.head = null;
+                }
+                else
+                {
+                    Node fatherNode = node.fatherNode;
+                    if(node == fatherNode.getLChild())
+                    {
+                        fatherNode.setLChild(null);
+                    }
+                    else if(node == fatherNode.getRChild())
+                    {
+                        fatherNode.setRChild(null);
+                    }
+                    else
+                    {
+                        log.warning("notNode was not son of it's father");
+                        return false;
+                    }
+                }
             }
         }
         return true;
     }
     
     //将生成的树转化为用数字表示，并生成一个charClass保存数字和字符的转换关系
-    public boolean simplify(int charClass[])
+    public boolean simplify()
     {
         
         if (!changeCharToInt()) return false;
         if (!dealNotNode()) return false;
-        HashSet<Character> singleChars = new HashSet<Character>();  //保存单个的字符
+        if (!dealMetaChar()) return false;
+
+        HashSet<Node> singleCharNodes = new HashSet<Node>();  //保存单个字符的Node
+        HashSet<Node> multiCharNodes = new HashSet<Node>();  //保存范围字符的Node
+
+        HashSet<Integer> singleChars = new HashSet<Integer>();  //保存单个的字符
         HashSet<Integer[]> multiChars = new HashSet<Integer[]>();   //保存范围字符
-        LinkedList<Node> notNodes = new LinkedList<Node>();                 //保存内容为NOT的结点
+        
         //int charClass[] = new int[65536];
         Stack<Node> stack = new Stack<Node>();
 
@@ -344,21 +501,64 @@ public class GrammerTree
             node = stack.pop();
             if (node.nodeType() == NodeType.OPERATOR)
             {
-                if (node.value == Operator.NOT)
-                {
-                    notNodes.add(node);
-                }
-
                 lNode = node.getLChild();
                 rNode = node.getRChild();
                 if (lNode != null) stack.push(lNode);
                 if (rNode != null) stack.push(rNode);
                 continue;
             }
-            //TODO complete all functions
+            if (node.nodeType() == NodeType.CHAR)
+            {
+                singleCharNodes.add(node);
+                singleChars.add((int)node.value);
+            }
+            else if(node.nodeType() == NodeType.MULTICHARS)
+            {
+                multiCharNodes.add(node);
+                multiChars.add(new Integer[]{(int)node.value, (int)node.value2});
+            }
         }
 
+        ArrayList<Integer[]> resultList = this.splitMulti(multiChars, singleChars);
 
+        //转换结点
+        if(resultList.size() == 0)
+        {
+            log.warning("resultList's size is ZERO");
+            return false;
+        }
+        for(Node mCN: multiCharNodes)
+        {
+            int s = 0;
+            int e = resultList.size();
+            int m = 0;
+
+            //二分查找
+            while(s <= e)
+            {
+                m = (e + s) / 2;
+                if (resultList.get(m)[0] > (int)mCN.value)
+                {
+                    e = m - 1;
+                }
+                else if(resultList.get(m)[0] < (int)mCN.value)
+                {
+                    s = m + 1;
+                }
+                else
+                {
+                    s = m;
+                    break;
+                }
+            }
+            System.out.println(s + " " + resultList.get(s)[0] + " " + resultList.get(s)[1] + " " + mCN.value + " " + mCN.value2);
+            //TODO
+
+        } 
+
+
+        //开始改为数字并生成charClass
+        this.charClass = new int[65536]; //内部元素默认值为0
 
         return true;
     }
