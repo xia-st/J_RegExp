@@ -7,4 +7,5 @@ public enum NodeType
 	MULTICHARS,
 	OPERATOR,
 	METACHARACTER,
+	CLASSNUM;
 }

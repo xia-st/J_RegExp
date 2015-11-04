@@ -6,9 +6,10 @@ package pers.xia.jregexp.engine;
  */
 public class Node implements Cloneable
 {
-	public Object value;
-    public Object value2;
-    public Node fatherNode;
+	public Object value;    //第一个值，在char类型和operator类型中只使用这一个变量
+    public Object value2;   //第二个值，在multichar、和range中会用到这个变量
+    public int num; //保存在charClass中对应的数据。
+    public Node fatherNode; //父结点
 
 	private boolean isTree = false;     //是否为一颗树
 	private Node lChild = null;
@@ -97,6 +98,10 @@ public class Node implements Cloneable
         if(this.nodeType == NodeType.MULTICHARS)
         {
             return value + "-" + value2;
+        }
+        if(this.nodeType == NodeType.CLASSNUM)
+        {
+            return String.valueOf(this.num);
         }
         return this.value.toString();
     }

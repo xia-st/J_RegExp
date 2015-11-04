@@ -180,7 +180,6 @@ public class GrammerTree
         //将这些数据从小到大对数据进行分割。
         for(int j = 1; j < numsList.size(); j++)
         {
-            //TODO
             int front = numsList.get(j-1);
             int below = numsList.get(j);
 
@@ -476,7 +475,6 @@ public class GrammerTree
     //将生成的树转化为用数字表示，并生成一个charClass保存数字和字符的转换关系
     public boolean simplify()
     {
-        
         if (!changeCharToInt()) return false;
         if (!dealNotNode()) return false;
         if (!dealMetaChar()) return false;
@@ -519,29 +517,31 @@ public class GrammerTree
             }
         }
 
-        ArrayList<Integer[]> resultList = this.splitMulti(multiChars, singleChars);
+        ArrayList<Integer[]> finalList = this.splitMulti(multiChars, singleChars);
+
+        ArrayList<Node> finalNodes = new ArrayList<Node>();   //保存最终出现的字符结点
 
         //转换结点
-        if(resultList.size() == 0)
+        if(finalList.size() == 0)
         {
-            log.warning("resultList's size is ZERO");
+            log.warning("finalList's size is ZERO");
             return false;
         }
         for(Node mCN: multiCharNodes)
         {
             int s = 0;
-            int e = resultList.size();
+            int e = finalList.size();
             int m = 0;
 
-            //二分查找
+            //二分查找找到结点被分割后的起始结点
             while(s <= e)
             {
                 m = (e + s) / 2;
-                if (resultList.get(m)[0] > (int)mCN.value)
+                if (finalList.get(m)[0] > (int)mCN.value)
                 {
                     e = m - 1;
                 }
-                else if(resultList.get(m)[0] < (int)mCN.value)
+                else if(finalList.get(m)[0] < (int)mCN.value)
                 {
                     s = m + 1;
                 }
@@ -551,15 +551,79 @@ public class GrammerTree
                     break;
                 }
             }
-            System.out.println(s + " " + resultList.get(s)[0] + " " + resultList.get(s)[1] + " " + mCN.value + " " + mCN.value2);
-            //TODO
+            if(finalList.get(s)[0] != mCN.value)
+            {
+                log.warning("finalList error: can't find " + finalList.get(s)[0]);
+                return false;
+            }
 
+            e = s;
+            while(finalList.get(e)[1] < (int)mCN.value2) e++;
+            if(finalList.get(e)[1] != mCN.value2)
+            {
+                log.warning("finalList error: can't find " + finalList.get(e)[1]);
+                return false;
+            }
+
+            //将数据转化为二叉树
+            Node preNode = new Node(finalList.get(s)[0], finalList.get(s)[1]);
+            preNode.setNodeType(NodeType.MULTICHARS);
+            Node nextNode = null;
+            Node optNode = null;
+
+            finalNodes.add(preNode);
+            for(int i = s + 1; i <= e; i++)
+            {
+                nextNode = new Node(finalList.get(i)[0], finalList.get(i)[1]);
+                nextNode.setNodeType(NodeType.MULTICHARS);
+
+                finalNodes.add(nextNode);
+
+                optNode = new Node(Operator.OR);
+                optNode.setLChild(preNode);
+                optNode.setRChild(nextNode);
+                preNode = optNode;
+            }
+
+            //将二叉树合并到原二叉树中
+            if(mCN == this.head)
+            {
+                this.head = preNode;
+            }
+            else
+            {
+                Node fatherNode = mCN.fatherNode;
+                if(fatherNode.getLChild() == mCN)
+                {
+                    fatherNode.setLChild(preNode);
+                }
+                else if(fatherNode.getRChild() == mCN)
+                {
+                    fatherNode.setRChild(preNode);
+                }
+                else
+                {
+                    log.warning("notNode was not son of it's father");
+                    return false;
+                }
+            }
         } 
 
-
-        //开始改为数字并生成charClass
+        //开始生成charClass并改为数字
         this.charClass = new int[65536]; //内部元素默认值为0
+        for(int i = 0; i < finalList.size(); i++)
+        {
+            for(int j = finalList.get(i)[0]; j <= finalList.get(i)[1]; j++)
+            {
+                this.charClass[j] = i + 1;
+            }
+        }
 
+        for(Node fN : finalNodes)
+        {
+            fN.num = this.charClass[(int)fN.value];
+            fN.setNodeType(NodeType.CLASSNUM);
+        }
         return true;
     }
 	
