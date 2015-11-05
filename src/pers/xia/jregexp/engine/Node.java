@@ -59,6 +59,8 @@ public class Node implements Cloneable
 	
 	boolean setLChild(Node node)
 	{
+        //System.out.println(node.value + "." + node.hashCode() + " " +
+        //       this.value + "." + this.hashCode());
 		this.lChild = node;
 		this.isTree = true;
         node.fatherNode = this;
@@ -72,6 +74,8 @@ public class Node implements Cloneable
 	
 	boolean setRChild(Node node)
 	{
+        //System.out.println(node.value + "." + node.hashCode() + " " +
+        //       this.value + "." + this.hashCode());
 		this.rChild = node;
 		this.isTree = true;
         node.fatherNode = this;
@@ -90,6 +94,12 @@ public class Node implements Cloneable
 
     public String toString()
     {
+        /*
+        if(this.fatherNode == null)
+            return String.valueOf(this.hashCode()) + ".null";
+        else
+            return this.hashCode() + "." + this.fatherNode.hashCode();
+            */
         if(this.nodeType == NodeType.RANGE)
         {
             return "{" + String.valueOf(this.value) + "," + 
@@ -97,6 +107,7 @@ public class Node implements Cloneable
         }
         if(this.nodeType == NodeType.MULTICHARS)
         {
+            //return String.valueOf(this.hashCode());
             return value + "-" + value2;
         }
         if(this.nodeType == NodeType.CLASSNUM)
@@ -108,7 +119,7 @@ public class Node implements Cloneable
 
     public Node clone()
     {
-         try {   
+        try {   
             return (Node)super.clone();   
         } catch (CloneNotSupportedException e) {   
             return null;   

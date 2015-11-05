@@ -74,7 +74,6 @@ public class GrammerTree
             for(int s: sc)
             {
                 mc2.add(new Integer[]{s, s});
-
             }
             return mc2;
         }
@@ -170,6 +169,7 @@ public class GrammerTree
 
             //设置最大值为下一个字符范围的较大值。
             maxNum = mc.get(i)[1];
+            numMap.clear();
             i--;
         }
 
@@ -527,12 +527,18 @@ public class GrammerTree
             log.warning("finalList's size is ZERO");
             return false;
         }
+
+        //添加单结点
+        for(Node sCN: singleCharNodes)
+        {
+            finalNodes.add(sCN);
+        }
+
         for(Node mCN: multiCharNodes)
         {
             int s = 0;
             int e = finalList.size();
             int m = 0;
-
             //二分查找找到结点被分割后的起始结点
             while(s <= e)
             {
@@ -624,6 +630,12 @@ public class GrammerTree
             fN.num = this.charClass[(int)fN.value];
             fN.setNodeType(NodeType.CLASSNUM);
         }
+
+        for(Integer[] fL : finalList)
+        {
+            System.out.println(fL[0] + " " + fL[1] + " " + this.charClass[fL[0]]);
+        }
+
         return true;
     }
 	
@@ -653,7 +665,8 @@ public class GrammerTree
 
                 if(c == 's')
                 {
-                    node = DefaultNode.sNode.clone();
+                    //node = DefaultNode.sNode.clone();
+                    node = DefaultNode.getRangeTree(DefaultNode.s, false);
                 }
                 else if(c == 'b')
                 {
@@ -661,15 +674,18 @@ public class GrammerTree
                 }
                 else if(c == 'w')
                 {
-                    node = DefaultNode.wNode.clone();
+                    //node = DefaultNode.wNode.clone();
+                    node = DefaultNode.getRangeTree(DefaultNode.w, false);
                 }
                 else if(c == 'd')
                 {
-                    node = DefaultNode.dNode.clone();
+                    //node = DefaultNode.dNode.clone();
+                    node = DefaultNode.getRangeTree(DefaultNode.d, false);
                 }
                 else if(c == 'S')
                 {
-                    node = DefaultNode.SNode.clone();
+                    //node = DefaultNode.SNode.clone();
+                    node = DefaultNode.getRangeTree(DefaultNode.s, true);
                 }
                 else if(c == 'B')
                 {
@@ -677,11 +693,13 @@ public class GrammerTree
                 }
                 else if(c == 'W')
                 {
-                    node = DefaultNode.WNode.clone();
+                    //node = DefaultNode.WNode.clone();
+                    node = DefaultNode.getRangeTree(DefaultNode.w, true);
                 }
                 else if(c == 'D')
                 {
-                    node = DefaultNode.DNode.clone();
+                    //node = DefaultNode.DNode.clone();
+                    node = DefaultNode.getRangeTree(DefaultNode.d, true);
                 }
                 else
                 {
@@ -1088,9 +1106,9 @@ public class GrammerTree
 			}
             if (preNode.nodeType() == NodeType.RANGE)
             {
-					preNode.setLChild(node);
-					resultStack.push(preNode);
-					continue;
+                preNode.setLChild(node);
+                resultStack.push(preNode);
+                continue;
             }
 			optNode = new Node(Operator.AND);
 			optNode.setLChild(node);

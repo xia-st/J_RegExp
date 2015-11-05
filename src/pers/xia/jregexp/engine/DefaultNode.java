@@ -17,8 +17,12 @@ public final class DefaultNode
 	public static Node BNode = null;
 	public static Node DNode = null;
 	public static Node WNode = null;
+	
+    public static String s = " \t\r\n"; //\s中包含的字符
+    public static String d = "0-9"; //\d中包含的字符
+    public static String w = "a-zA-Z0-9_"; //\w中包含的字符
 
-    private static Node getRangeTree(String s, boolean reverse)
+    public static Node getRangeTree(String s, boolean reverse)
     {
         HashSet<Character> oneChars = new HashSet<Character>();
         HashSet<char[]> multiChars = new HashSet<char[]>();
@@ -98,19 +102,16 @@ public final class DefaultNode
         return node;
     }
 	
+	/*
 	static
 	{
-        String s = " \t\r\n"; //\s中包含的字符
-        String d = "0-9"; //\d中包含的字符
-        String w = "a-zA-Z0-9_"; //\w中包含的字符
-
         sNode = getRangeTree(s, false);
         SNode = getRangeTree(s, true);
         dNode = getRangeTree(d, false);
         DNode = getRangeTree(d, true);
         wNode = getRangeTree(w, false);
         WNode = getRangeTree(w, true);
-
 	}
+	 */
 
 }

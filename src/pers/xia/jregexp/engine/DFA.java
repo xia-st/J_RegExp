@@ -33,7 +33,7 @@ public class DFA
 	
 	public static void main(String[] args)
 	{
-        String s = "[a-dd-he-ha-z]";
+        String s = "\\w[a-dd-he-ha-z]";
         GrammerTree tree = new GrammerTree(s);
 		tree.showTree();
         tree.simplify();
