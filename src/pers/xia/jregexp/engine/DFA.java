@@ -3,14 +3,23 @@ package pers.xia.jregexp.engine;
 
 public class DFA
 {
-	Status startStatus;
-	String input;
-	int subIndex;
+	Status startStatus = null;
+	String input = null;
+    int [] charClass = null;
+    GrammerTree tree;
 	
+    public DFA(String input)
+    {
+        this.input = input;
+    }
 	
 	Node createGrammerTree()
 	{
-	
+        this.tree = new GrammerTree(this.input);
+		this.tree.showTree();
+        this.tree.simplify();
+		this.tree.showTree();
+        this.charClass = this.tree.charClass;
 		return null;
 	}
 	
@@ -33,11 +42,9 @@ public class DFA
 	
 	public static void main(String[] args)
 	{
-        String s = "\\w[a-dd-he-ha-z]";
-        GrammerTree tree = new GrammerTree(s);
-		tree.showTree();
-        tree.simplify();
-		tree.showTree();
+        String s = "[a-f]{1,3}2[a-cx-z]";
+        DFA dfa = new DFA(s);
+        dfa.createGrammerTree();
 	}
 	
 }

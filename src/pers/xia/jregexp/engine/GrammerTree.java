@@ -26,6 +26,18 @@ public class GrammerTree
 	Stack<Node> resultStack = new Stack<Node>();
     private int cur = 0;
 
+	GrammerTree(String input)
+	{
+        log.setLevel(Level.ALL);
+        
+        this.reString = input;
+        this.cur = this.reString.length() - 1;
+		if (!this.createGrammerTree())
+		{
+            log.warning("ERROR");
+        }
+	}
+
     char getNextC()
     {
         if(cur < 0)   
@@ -49,18 +61,6 @@ public class GrammerTree
         this.cur++;
         return true;
     }
-
-	GrammerTree(String input)
-	{
-        log.setLevel(Level.ALL);
-        
-        this.reString = input;
-        this.cur = this.reString.length() - 1;
-		if (!this.createGrammerTree())
-		{
-            log.warning("ERROR");
-        }
-	}
 
     //将范围字符和单个字符进行分割，并返回由小到大排列分割后的范围字符
     private ArrayList<Integer[]> splitMulti(HashSet<Integer[]> multiChars, HashSet<Integer>singleChars)
@@ -289,10 +289,11 @@ public class GrammerTree
                 node.value = (int)((Character)node.value);
                 node.value2 = (int)((Character)node.value2);
             }
-            else if(node.nodeType() == NodeType.OPERATOR)
+            else if(node.nodeType() == NodeType.OPERATOR ||
+                    node.nodeType() == NodeType.RANGE)
             {
-                if(node.getLChild() != null) stack.push(node.getLChild());
                 if(node.getRChild() != null) stack.push(node.getRChild());
+                if(node.getLChild() != null) stack.push(node.getLChild());
             }
         }
         return true;
@@ -313,15 +314,16 @@ public class GrammerTree
         while(!stack.empty())
         {
             node = stack.pop();
-            if (node.nodeType() == NodeType.OPERATOR)
+            if (node.nodeType() == NodeType.OPERATOR ||
+                    node.nodeType() == NodeType.RANGE)
             {
                 if(node.value != Operator.NOT)
                 {
                     lNode = node.getLChild();
                     rNode = node.getRChild();
 
-                    if(lNode != null) stack.push(lNode);
                     if(rNode != null) stack.push(rNode);
+                    if(lNode != null) stack.push(lNode);
                     continue;
                 }
 
@@ -334,6 +336,11 @@ public class GrammerTree
                 while(!stack2.empty())
                 {
                     node = stack2.pop();
+                    if(node.nodeType() == NodeType.RANGE)
+                    {
+                        log.warning("Have operator without OR below NOT operator");
+                        return false;
+                    }
                     if(node.nodeType() == NodeType.OPERATOR)
                     {
                         if(node.value != Operator.OR)
@@ -343,8 +350,8 @@ public class GrammerTree
                         }
                         lNode = node.getLChild();
                         rNode = node.getRChild();
-                        if(lNode != null) stack2.push(lNode);
                         if(rNode != null) stack2.push(rNode);
+                        if(lNode != null) stack2.push(lNode);
                         continue;
                     }
                     if(node.nodeType() == NodeType.CHAR)
@@ -438,10 +445,11 @@ public class GrammerTree
         while(!stack.empty())
         {
             node = stack.pop();
-            if(node.nodeType() == NodeType.OPERATOR)
+            if(node.nodeType() == NodeType.OPERATOR ||
+                    node.nodeType() == NodeType.RANGE)
             {
-                if(node.getLChild() != null) stack.push(node.getLChild());
                 if(node.getRChild() != null) stack.push(node.getRChild());
+                if(node.getLChild() != null) stack.push(node.getLChild());
                 continue;
             }
             if(node.value instanceof MetaCharacter)
@@ -497,12 +505,13 @@ public class GrammerTree
         while(!stack.empty())
         {
             node = stack.pop();
-            if (node.nodeType() == NodeType.OPERATOR)
+            if (node.nodeType() == NodeType.OPERATOR ||
+                    node.nodeType() == NodeType.RANGE)
             {
                 lNode = node.getLChild();
                 rNode = node.getRChild();
-                if (lNode != null) stack.push(lNode);
                 if (rNode != null) stack.push(rNode);
+                if (lNode != null) stack.push(lNode);
                 continue;
             }
             if (node.nodeType() == NodeType.CHAR)
@@ -631,11 +640,6 @@ public class GrammerTree
             fN.setNodeType(NodeType.CLASSNUM);
         }
 
-        for(Integer[] fL : finalList)
-        {
-            System.out.println(fL[0] + " " + fL[1] + " " + this.charClass[fL[0]]);
-        }
-
         return true;
     }
 	
@@ -735,7 +739,9 @@ public class GrammerTree
 				
 				//如果顶端是一个操作符的话说明字符串的左括号前面跟着操作符，不合法
                 node = resultStack.pop();
-				if(node.nodeType() == NodeType.OPERATOR && !node.isTree()) //这里包括了右括号的判断
+				if((node.nodeType() == NodeType.OPERATOR || 
+                            node.nodeType() == NodeType.RANGE) &&
+                        !node.isTree()) //这里包括了右括号的判断
 				{
 					this.head = null;
                     log.warning("小括号不匹配");
@@ -746,7 +752,8 @@ public class GrammerTree
 				{
 					preNode = resultStack.pop();
 
-					if (preNode.nodeType() == NodeType.OPERATOR)
+					if (preNode.nodeType() == NodeType.OPERATOR || 
+                            preNode.nodeType() == NodeType.RANGE)
 					{
 						if(preNode.value == Operator.RP)    //遇到右括号说明匹配完成
 						{
@@ -759,7 +766,9 @@ public class GrammerTree
                             preNode = resultStack.pop();
 
                             // 在|符号后面不能跟着其他操作符。在其他代码正确无误情况下不可能进入这个if语句。
-                            if(preNode.nodeType() == NodeType.OPERATOR && !preNode.isTree()) 
+                            if((preNode.nodeType() == NodeType.OPERATOR ||
+                                        preNode.nodeType() == NodeType.RANGE) &&
+                                    !preNode.isTree()) 
                             {
                                 log.warning("operator append OR");
                                 head = null;
@@ -779,6 +788,7 @@ public class GrammerTree
                             node = preNode;
 							continue;
 						}
+                        log.warning("can't step into here in normal");
 					}
 					optNode = new Node(Operator.AND);
 					optNode.setLChild(node);
@@ -1012,7 +1022,9 @@ public class GrammerTree
 			if (c == '|')
 			{
 				node = resultStack.get(resultStack.size() - 1);
-				if(node.nodeType() == NodeType.OPERATOR && !node.isTree())
+				if((node.nodeType() == NodeType.OPERATOR ||
+                            node.nodeType() == NodeType.RANGE)
+                        && !node.isTree())
 				{
                     log.warning("在|后面跟着其他操作符");
 					this.head = null;
@@ -1028,7 +1040,9 @@ public class GrammerTree
                 if(!resultStack.empty())
                 {
                     node = resultStack.get(resultStack.size() - 1);
-                    if(node.nodeType() == NodeType.OPERATOR && !node.isTree())
+                    if((node.nodeType() == NodeType.OPERATOR ||
+                                node.nodeType() == NodeType.RANGE)
+                            && !node.isTree())
                     {
                         this.head = null;
                         return false;
@@ -1045,7 +1059,8 @@ public class GrammerTree
                 if(!resultStack.empty())
                 {
                     node = resultStack.get(resultStack.size() - 1);
-                    if(node.nodeType() == NodeType.OPERATOR && !node.isTree())
+                    if((node.nodeType() == NodeType.OPERATOR ||
+                                node.nodeType() == NodeType.RANGE) && !node.isTree())
                     {
                         this.head = null;
                         return false;
@@ -1062,7 +1077,8 @@ public class GrammerTree
                 if(!resultStack.empty())
                 {
                     node = resultStack.get(resultStack.size() - 1);
-                    if(node.nodeType() == NodeType.OPERATOR && !node.isTree())
+                    if((node.nodeType() == NodeType.OPERATOR ||
+                                node.nodeType() == NodeType.RANGE) && !node.isTree())
                     {
                         this.head = null;
                         return false;
@@ -1088,7 +1104,9 @@ public class GrammerTree
 			
 			preNode = resultStack.pop();
 			
-			if(preNode.nodeType() == NodeType.OPERATOR && !preNode.isTree())
+			if((preNode.nodeType() == NodeType.OPERATOR ||
+                        preNode.nodeType() == NodeType.RANGE)
+                    && !preNode.isTree())
 			{
 				if (preNode.value == Operator.RP ||
                         preNode.value == Operator.OR)
@@ -1125,7 +1143,9 @@ public class GrammerTree
 		
 		//如果顶端是一个操作符的话说明字符串的第一个字符为操作符，不合法
         node = resultStack.pop();
-		if(node.nodeType() == NodeType.OPERATOR && !node.isTree())
+		if((node.nodeType() == NodeType.OPERATOR ||
+                    node.nodeType() == NodeType.RANGE)
+               && !node.isTree())
 		{
 			this.head = null;
 			return false;
@@ -1136,7 +1156,9 @@ public class GrammerTree
 		{
 			preNode = resultStack.pop();
 			
-			if (!preNode.isTree() && preNode.nodeType() == NodeType.OPERATOR)
+			if (!preNode.isTree() && 
+                    (preNode.nodeType() == NodeType.OPERATOR || 
+                        preNode.nodeType() == NodeType.OPERATOR))
 			{
 				if (preNode.value == Operator.RP)
 				{
@@ -1153,7 +1175,9 @@ public class GrammerTree
                     }
                     preNode = resultStack.pop();
 
-                    if(preNode.nodeType() == NodeType.OPERATOR && !preNode.isTree()) 
+                    if((preNode.nodeType() == NodeType.OPERATOR ||
+                                preNode.nodeType() == NodeType.RANGE)
+                            && !preNode.isTree()) 
                     {
                         log.warning("operator append OR");
                         head = null;
