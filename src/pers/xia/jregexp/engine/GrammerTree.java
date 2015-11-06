@@ -642,10 +642,6 @@ public class GrammerTree
             }
         }
 
-        for(Integer[] fL : finalList)
-        {
-            System.out.println(fL[0] + " " + fL[1]);
-        }
         for(Node fN : finalNodes)
         {
             fN.num = this.charClass[(int)fN.value];

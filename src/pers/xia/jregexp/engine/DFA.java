@@ -282,7 +282,6 @@ public class DFA
             status = stack.pop();
             if(!set.contains(status))
             {
-
                 set.add(status);
                 LinkedList<Edge> outEdgeList = status.getAllOutEdge();
                 for(Edge eL : outEdgeList)
