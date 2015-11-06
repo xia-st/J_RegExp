@@ -292,8 +292,17 @@ public class GrammerTree
             else if(node.nodeType() == NodeType.OPERATOR ||
                     node.nodeType() == NodeType.RANGE)
             {
-                if(node.getRChild() != null) stack.push(node.getRChild());
-                if(node.getLChild() != null) stack.push(node.getLChild());
+                if(node.value == Operator.DOT)
+                {
+                    node.value = 0;
+                    node.value2 = 65535;
+                    node.setNodeType(NodeType.MULTICHARS);
+                }
+                else
+                {
+                    if(node.getRChild() != null) stack.push(node.getRChild());
+                    if(node.getLChild() != null) stack.push(node.getLChild());
+                }
             }
         }
         return true;
@@ -493,7 +502,6 @@ public class GrammerTree
         HashSet<Integer> singleChars = new HashSet<Integer>();  //保存单个的字符
         HashSet<Integer[]> multiChars = new HashSet<Integer[]>();   //保存范围字符
         
-        //int charClass[] = new int[65536];
         Stack<Node> stack = new Stack<Node>();
 
         Node node = this.head;
@@ -574,9 +582,9 @@ public class GrammerTree
 
             e = s;
             while(finalList.get(e)[1] < (int)mCN.value2) e++;
-            if(finalList.get(e)[1] != mCN.value2)
+            if(finalList.get(e)[1] != (int)mCN.value2)
             {
-                log.warning("finalList error: can't find " + finalList.get(e)[1]);
+                log.warning("FinalList error: can't find " + finalList.get(e)[1]);
                 return false;
             }
 
@@ -634,6 +642,10 @@ public class GrammerTree
             }
         }
 
+        for(Integer[] fL : finalList)
+        {
+            System.out.println(fL[0] + " " + fL[1]);
+        }
         for(Node fN : finalNodes)
         {
             fN.num = this.charClass[(int)fN.value];
@@ -728,6 +740,12 @@ public class GrammerTree
                 haveNode = true;
             }
 
+            if(c == '.')
+            {
+                haveNode = true;
+                node = new Node(Operator.DOT);
+            }
+			
 			if (c == '(' )
 			{
 				if (resultStack.size() < 2) // 至少要有一个Node和一个右括号两个元素
@@ -1071,7 +1089,7 @@ public class GrammerTree
 				resultStack.push(optNode);
 				continue;
 			}
-			
+
 			if (c == '?')
 			{
                 if(!resultStack.empty())
