@@ -112,6 +112,7 @@ public class Status
         for(Edge oE : this.outEdge)
         {
             oE.start = null;
+            oE.end.disConnInEdge(oE);
         }
         this.outEdge.clear();
         return true;
@@ -122,6 +123,7 @@ public class Status
         for(Edge iE : this.inEdge)
         {
             iE.end = null;
+            iE.start.disConnOutEdge(iE);
         }
         this.inEdge.clear();
         return true;

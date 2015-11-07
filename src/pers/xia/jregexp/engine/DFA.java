@@ -367,7 +367,7 @@ public class DFA
         for(Status eS : emptyStatus)
         {
             eS.disConnAllInEdge();
-            eS.disConnAllInEdge();
+            eS.disConnAllOutEdge();
         }
 
         for(Edge eE : emptyEdge)
@@ -403,6 +403,7 @@ public class DFA
             if(!set.contains(status))
             {
                 set.add(status);
+
                 LinkedList<Edge> outEdgeList = status.getAllOutEdge();
                 for(Edge eL : outEdgeList)
                 {
