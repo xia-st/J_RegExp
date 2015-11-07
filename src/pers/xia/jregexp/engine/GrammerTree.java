@@ -247,12 +247,16 @@ public class GrammerTree
 
                     if(mc1.get(j)[0] > mc1.get(j)[1])
                     {
-                        i++;
+                        j++;
                     }
                     break;
                 }
                 //如果sc.get(i)的值在原范围的右侧的话就直接把该范围放入到mc2中
                 mc2.add(mc1.get(j));
+            }
+            if(j >= mc1.size())
+            {
+                break;
             }
         }
 
@@ -1129,19 +1133,20 @@ public class GrammerTree
 					resultStack.push(node);
 					continue;
 				}
-				if (!preNode.isTree())
-				{
-					preNode.setLChild(node);
-					resultStack.push(preNode);
-					continue;
-				}
-			}
-            if (preNode.nodeType() == NodeType.RANGE)
-            {
                 preNode.setLChild(node);
-                resultStack.push(preNode);
-                continue;
-            }
+
+                node = preNode;
+                preNode = resultStack.pop();
+
+                if((preNode.nodeType() == NodeType.OPERATOR ||
+                            preNode.nodeType() == NodeType.RANGE)
+                        && !preNode.isTree())
+                {
+                    log.warning("Error: Have Operator after Operator");
+                    head = null;
+                    return false;
+                }
+			}
 			optNode = new Node(Operator.AND);
 			optNode.setLChild(node);
 			optNode.setRChild(preNode);

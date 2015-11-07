@@ -4,6 +4,7 @@ import java.util.Stack;
 import java.util.logging.Logger;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.HashMap;
 
 
@@ -85,6 +86,7 @@ public class DFA
         this.input = input;
         this.createGrammerTree();
         this.createENFA();
+        this.createNFA();
         this.showDFA(this.startStatus);
     }
 	
@@ -261,7 +263,125 @@ public class DFA
 
 	boolean createNFA()
 	{
-        //TODO
+        Status status = this.startStatus;
+        Stack<Status> statusStack = new Stack<Status>(); //保存有效status的信息。
+        HashMap<Status, LinkedList<Edge>> map = new HashMap<Status, LinkedList<Edge>>(); // 保存status与它的有效边。
+
+        HashSet<Status> emptyStatus = new HashSet<Status>(); //inEdge值都为-1的status
+        HashSet<Edge> emptyEdge = new HashSet<Edge>(); //值为-1的inEdge
+
+        statusStack.push(status);
+
+        HashSet<Status> checkedStatus = new HashSet<Status>();//保存在下面循环中已经处理过的status，防止重复访问
+        //找到所有status能到达的第一个非空edge，结果存在map中。
+        while(!statusStack.empty())
+        {
+            status = statusStack.pop(); //当前处理的结点
+
+            //判断是否已经处理过，如果已经处理过的话进行下次循环
+            if(checkedStatus.contains(status))
+            {
+                continue;
+            }
+            checkedStatus.add(status);
+
+            Stack<Status> tempStack = new Stack<Status>(); //中间可能途径的结点
+            tempStack.push(status);
+            
+            LinkedList<Edge> edges = new LinkedList<Edge>(); // 保存一个status第一个到达的非空edge
+
+            HashSet<Edge> checkedEdges = new HashSet<Edge>(); //保存在下面循环中已经访问过的edge，防止重复访问
+            //获取到status所有下一个非空的edge，将其与status放入map中。
+            while(!tempStack.empty())
+            {
+                Status tempStatus = tempStack.pop();
+                LinkedList<Edge> outEdgeList = tempStatus.getAllOutEdge();
+                for(Edge oEL : outEdgeList)
+                {
+                    //判断oEL是否已经处理过，如果处理过的话继续进行循环。
+                    if(checkedEdges.contains(oEL))
+                    {
+                        continue;
+                    }
+                    checkedEdges.add(oEL);
+
+                    if(oEL.matchContent == -1)
+                    {
+                        emptyEdge.add(oEL);
+                        if(oEL.end.isFinalStatus())
+                        {
+                            status.setFinalStatus(true);
+                        }
+                        tempStack.push(oEL.end);
+
+                        //检查oEL.end的inEdge是否都为-1，如果是的话放入到emptyStatus中。
+                        //如果在emptyStatus或者map的key中已经包含了这个status，就不需要继续进行判断了
+                        if(!emptyStatus.contains(oEL.end) && 
+                                !map.keySet().contains(oEL.end))
+                        {
+                            LinkedList<Edge> inEdge = oEL.end.getAllInEdge();
+                            boolean flag = false;
+                            for(Edge iE : inEdge)
+                            {
+                                if(iE.matchContent != -1)
+                                {
+                                    flag = true;
+                                    break;
+                                }
+                            }
+                            if(!flag)
+                            {
+                                emptyStatus.add(oEL.end);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        edges.add(oEL);
+                        statusStack.push(oEL.end);
+                    }
+                }
+            }
+            map.put(status, edges);
+        }
+
+
+        //创建新edge，将status和选中的edge.end连接起来
+        for(Map.Entry<Status, LinkedList<Edge>> mp : map.entrySet())
+        {
+            Status status2 = mp.getKey();
+            for(Edge eg : mp.getValue())
+            {
+                if(eg.start == status2)
+                {
+                    continue;
+                }
+                Edge edge = new Edge(eg.matchContent);
+                status2.connOutEdge(edge);
+                eg.end.connInEdge(edge);
+            }
+        }
+
+        //TODO 把空status和空edge删除
+        //先删除空status，再删除edge
+        for(Status eS : emptyStatus)
+        {
+            eS.disConnAllInEdge();
+            eS.disConnAllInEdge();
+        }
+
+        for(Edge eE : emptyEdge)
+        {
+            if(eE.start != null)
+            {
+                eE.start.disConnOutEdge(eE);
+            }
+            if(eE.end != null)
+            {
+                eE.end.disConnInEdge(eE);
+            }
+        }
+        
 		return true;
 	}
 	
@@ -305,7 +425,7 @@ public class DFA
 	
 	public static void main(String[] args)
 	{
-        String s = ".[b-f]";
+        String s = "1(a|a)2";
         DFA dfa = new DFA(s);
 	}
 }

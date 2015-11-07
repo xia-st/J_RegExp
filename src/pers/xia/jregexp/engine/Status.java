@@ -107,6 +107,36 @@ public class Status
         return true;
     }
 
+    boolean disConnAllOutEdge()
+    {
+        for(Edge oE : this.outEdge)
+        {
+            oE.start = null;
+        }
+        this.outEdge.clear();
+        return true;
+    }
+
+    boolean disConnAllInEdge()
+    {
+        for(Edge iE : this.inEdge)
+        {
+            iE.end = null;
+        }
+        this.inEdge.clear();
+        return true;
+    }
+
+    boolean containInEdge(Edge edge)
+    {
+        return this.inEdge.contains(edge);
+    }
+
+    boolean containOutEdge(Edge edge)
+    {
+        return this.outEdge.contains(edge);
+    }
+
     @SuppressWarnings("unchecked")
 	LinkedList<Edge> getAllInEdge()      
     {
