@@ -362,7 +362,7 @@ public class DFA
             }
         }
 
-        //TODO 把空status和空edge删除
+        //把空status和空edge删除
         //先删除空status，再删除edge
         for(Status eS : emptyStatus)
         {
@@ -388,6 +388,8 @@ public class DFA
 	boolean createDFA()
 	{
         //TODO
+        Status status = this.startStatus;
+        
 		return true;
 	}
 
@@ -407,7 +409,8 @@ public class DFA
                 LinkedList<Edge> outEdgeList = status.getAllOutEdge();
                 for(Edge eL : outEdgeList)
                 {
-                    System.out.print(status.hashCode() + " -> " + eL.matchContent + " -> " + eL.end.hashCode());
+                    System.out.print(status.hashCode() + " -> " + eL.matchContent +
+                           " -> " + eL.end.hashCode());
                     if(eL.end.isFinalStatus())
                     {
                         System.out.println(" Final Code");
