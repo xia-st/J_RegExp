@@ -1136,6 +1136,11 @@ public class GrammerTree
                 preNode.setLChild(node);
 
                 node = preNode;
+                if(resultStack.empty())
+                {
+                	resultStack.push(node);
+                	continue;
+                }
                 preNode = resultStack.pop();
 
                 if((preNode.nodeType() == NodeType.OPERATOR ||

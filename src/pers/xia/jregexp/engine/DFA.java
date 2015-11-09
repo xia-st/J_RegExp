@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Collections;
+import java.util.Comparator;
 
 
 public class DFA
@@ -17,6 +19,16 @@ public class DFA
     int [] charClass = null;
     GrammerTree tree;
     
+    public DFA(String input)
+    {
+        this.input = input;
+        this.createGrammerTree();
+        this.createENFA();
+        this.createNFA();
+        this.createDFA();
+        this.showDFA(this.startStatus);
+    }
+	
     //used to create a data structure like Status->Edge->Status
     static class SES
     {
@@ -79,15 +91,6 @@ public class DFA
             }
             return new SES(map.get(this.startS), map.get(this.endS));
         }
-    }
-	
-    public DFA(String input)
-    {
-        this.input = input;
-        this.createGrammerTree();
-        this.createENFA();
-        this.createNFA();
-        this.showDFA(this.startStatus);
     }
 	
 	Node createGrammerTree()
@@ -316,7 +319,8 @@ public class DFA
 
                         //检查oEL.end的inEdge是否都为-1，如果是的话放入到emptyStatus中。
                         //如果在emptyStatus或者map的key中已经包含了这个status，就不需要继续进行判断了
-                        if(!emptyStatus.contains(oEL.end) && 
+                        if(oEL.end != this.startStatus &&
+                                !emptyStatus.contains(oEL.end) && 
                                 !map.keySet().contains(oEL.end))
                         {
                             LinkedList<Edge> inEdge = oEL.end.getAllInEdge();
@@ -384,11 +388,125 @@ public class DFA
         
 		return true;
 	}
+
+    //判断两个HastSet中保存的数据是否一样
+    boolean cmpStatusColl(HashSet<Status> hs1, HashSet<Status> hs2)
+    {
+        if(hs1.size() != hs2.size()) return false;
+        if(!hs1.containsAll(hs2)) return false;
+        return true;
+    }
 	
 	boolean createDFA()
 	{
-        //TODO
         Status status = this.startStatus;
+        HashMap<HashSet<Status>, Status> d = new HashMap<HashSet<Status>, Status>(); //已经存在的DFA状态
+        Stack<HashSet<Status>> l = new Stack<HashSet<Status>>();        //未被处理但是已经创建的DFA状态
+
+        HashSet<Status> statusSet = new HashSet<Status>(); //保存当前运算的节点集合
+        statusSet.add(status);
+        status = new Status();
+
+        //需要对起始结点是否为结束结点进行判断
+        if(this.startStatus.isFinalStatus())
+        {
+            status.setFinalStatus(true);
+        }
+        d.put(statusSet, status);
+        l.push(statusSet);
+
+        this.startStatus = status; //设置新的起始位置
+
+        while(!l.isEmpty())
+        {
+            statusSet = l.pop();
+            LinkedList<Edge> edgeList = new LinkedList<Edge>();
+
+            //获取节点集合中的所有edge。
+            for(Status sS : statusSet)
+            {
+                edgeList.addAll(sS.getAllOutEdge());
+            }
+
+            if(edgeList.isEmpty())
+            {
+                continue;
+            }
+
+            //对edge按照metchContent从小到达进行排序，方便接下来的操作
+            Collections.sort(edgeList, new Comparator<Edge>()
+            {
+
+                @Override
+                public int compare(Edge o1, Edge o2)
+                {
+                    return o1.matchContent - o2.matchContent;
+                }
+            });
+
+            //将status集合按照edge的matchContent分组存放
+            //nextStatusMap保存某个集合通过一个同matchContent的边能到达的所有Status的集合
+            HashMap<Integer, HashSet<Status>> nextStatusMap = new HashMap<Integer, HashSet<Status>>(); 
+            int matchContent = edgeList.get(0).matchContent;
+
+            HashSet<Status> nextStatusSet = new HashSet<Status>();
+            for(Edge eL : edgeList)
+            {
+                if(eL.matchContent == matchContent)
+                {
+                    nextStatusSet.add(eL.end);
+                    continue;
+                }
+                nextStatusMap.put(matchContent, nextStatusSet);
+                nextStatusSet = new HashSet<Status>();
+                nextStatusSet.add(eL.end);
+                matchContent = eL.matchContent;
+            }
+            nextStatusMap.put(matchContent, nextStatusSet);
+
+            //将分组后的集合与已有的集合进行比较，如果存在的话将其与对应的Status进行链接，否则就创建一个新的Status并连接。
+            for(Map.Entry<Integer, HashSet<Status>> nextStatus: nextStatusMap.entrySet())
+            {
+                boolean flag = false;
+
+                for(HashSet<Status> existStatusSet : d.keySet())
+                {
+                    if(cmpStatusColl(existStatusSet, nextStatus.getValue()))
+                    {
+                        flag = true;
+
+                        Edge newEdge = new Edge(nextStatus.getKey());
+                        d.get(statusSet).connOutEdge(newEdge);
+                        d.get(existStatusSet).connInEdge(newEdge);
+                        break;
+                    }
+                }
+                if(!flag)
+                {
+                    boolean isFinalStatus = false;
+
+                    //判断是否为finalStatus：如果nextStatus中有一个结点是finalStatus，那么生成的结点必定为finalStatus
+                    for(Status nSV : nextStatus.getValue())
+                    {
+                        if(nSV.isFinalStatus())
+                        {
+                            isFinalStatus = true;
+                            break;
+                        }
+                    }
+
+                    Status newStatus = new Status();
+                    newStatus.setFinalStatus(isFinalStatus); 
+
+                    Edge newEdge = new Edge(nextStatus.getKey());
+                    d.get(statusSet).connOutEdge(newEdge);
+                    newStatus.connInEdge(newEdge);
+
+                    d.put(nextStatus.getValue(), newStatus);
+                    l.push(nextStatus.getValue());
+                }
+            }
+        }
         
 		return true;
 	}
@@ -398,7 +516,17 @@ public class DFA
         HashSet<Status> set = new HashSet<Status>();
         Stack<Status> stack = new Stack<Status>();
         Status status = null;
-        stack.push(startStatus);
+        System.out.print(this.startStatus.hashCode());
+        if(this.startStatus.isFinalStatus())
+        {
+            System.out.println(" Final Code");
+        }
+        else
+        {
+            System.out.println();
+        }
+
+        stack.push(this.startStatus);
         while(!stack.empty())
         {
             status = stack.pop();
@@ -410,6 +538,7 @@ public class DFA
                 for(Edge eL : outEdgeList)
                 {
                     System.out.print(status.hashCode() + " -> " + eL.matchContent +
+                          //  " " + eL.hashCode() +
                            " -> " + eL.end.hashCode());
                     if(eL.end.isFinalStatus())
                     {
@@ -429,7 +558,7 @@ public class DFA
 	
 	public static void main(String[] args)
 	{
-        String s = "1(a|a)2";
+        String s = "a[a-z]*";
         DFA dfa = new DFA(s);
 	}
 }
