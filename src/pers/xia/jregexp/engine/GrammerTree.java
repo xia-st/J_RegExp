@@ -1147,6 +1147,14 @@ public class GrammerTree
                             preNode.nodeType() == NodeType.RANGE)
                         && !preNode.isTree())
                 {
+                    if (preNode.value == Operator.RP ||
+                            preNode.value == Operator.OR)
+                    {
+                        resultStack.push(preNode);
+                        resultStack.push(node);
+                        continue;
+                    }
+
                     log.warning("Error: Have Operator after Operator");
                     head = null;
                     return false;
