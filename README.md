@@ -3,4 +3,4 @@
 ---------
 2015.11.10
 
-** version 0.0.1 released!! ** 
+**version 0.0.1 released!!** 
