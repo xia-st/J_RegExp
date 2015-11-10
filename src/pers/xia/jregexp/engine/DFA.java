@@ -18,7 +18,9 @@ public class DFA
 	String input = null;
     int [] charClass = null;
     GrammerTree tree;
-    
+    int [][] dfa = null; //记录
+    boolean []finalStatus = null;
+
     public DFA(String input)
     {
         this.input = input;
@@ -26,9 +28,10 @@ public class DFA
         this.createENFA();
         this.createNFA();
         this.createDFA();
-        this.showDFA(this.startStatus);
+        this.createDfaTable();
+        // this.showDFA(this.startStatus);
     }
-	
+
     //used to create a data structure like Status->Edge->Status
     static class SES
     {
@@ -92,15 +95,15 @@ public class DFA
             return new SES(map.get(this.startS), map.get(this.endS));
         }
     }
-	
-	Node createGrammerTree()
+
+	boolean createGrammerTree()
 	{
         this.tree = new GrammerTree(this.input);
-		this.tree.showTree();
+		// this.tree.showTree();
         this.tree.simplify();
-		this.tree.showTree();
+		// this.tree.showTree();
         this.charClass = this.tree.charClass;
-		return null;
+		return true;
 	}
 
     SES connWithAnd(SES a, SES b)
@@ -244,7 +247,7 @@ public class DFA
                 }
                 else
                 {
-                    log.warning("Exist unsolved operator: " + 
+                    log.warning("Exist unsolved operator: " +
                             ses.toString());
                     return false;
                 }
@@ -290,7 +293,7 @@ public class DFA
 
             Stack<Status> tempStack = new Stack<Status>(); //中间可能途径的结点
             tempStack.push(status);
-            
+
             LinkedList<Edge> edges = new LinkedList<Edge>(); // 保存一个status第一个到达的非空edge
 
             HashSet<Edge> checkedEdges = new HashSet<Edge>(); //保存在下面循环中已经访问过的edge，防止重复访问
@@ -320,7 +323,7 @@ public class DFA
                         //检查oEL.end的inEdge是否都为-1，如果是的话放入到emptyStatus中。
                         //如果在emptyStatus或者map的key中已经包含了这个status，就不需要继续进行判断了
                         if(oEL.end != this.startStatus &&
-                                !emptyStatus.contains(oEL.end) && 
+                                !emptyStatus.contains(oEL.end) &&
                                 !map.keySet().contains(oEL.end))
                         {
                             LinkedList<Edge> inEdge = oEL.end.getAllInEdge();
@@ -385,7 +388,7 @@ public class DFA
                 eE.end.disConnInEdge(eE);
             }
         }
-        
+
 		return true;
 	}
 
@@ -396,7 +399,7 @@ public class DFA
         if(!hs1.containsAll(hs2)) return false;
         return true;
     }
-	
+
 	boolean createDFA()
 	{
         Status status = this.startStatus;
@@ -446,7 +449,7 @@ public class DFA
 
             //将status集合按照edge的matchContent分组存放
             //nextStatusMap保存某个集合通过一个同matchContent的边能到达的所有Status的集合
-            HashMap<Integer, HashSet<Status>> nextStatusMap = new HashMap<Integer, HashSet<Status>>(); 
+            HashMap<Integer, HashSet<Status>> nextStatusMap = new HashMap<Integer, HashSet<Status>>();
             int matchContent = edgeList.get(0).matchContent;
 
             HashSet<Status> nextStatusSet = new HashSet<Status>();
@@ -496,7 +499,7 @@ public class DFA
                     }
 
                     Status newStatus = new Status();
-                    newStatus.setFinalStatus(isFinalStatus); 
+                    newStatus.setFinalStatus(isFinalStatus);
 
                     Edge newEdge = new Edge(nextStatus.getKey());
                     d.get(statusSet).connOutEdge(newEdge);
@@ -507,9 +510,73 @@ public class DFA
                 }
             }
         }
-        
+
 		return true;
 	}
+
+    boolean createDfaTable()
+    {
+        HashMap<Status, Integer> statusMap = new HashMap<Status, Integer>();
+        int index = 0;
+        LinkedList<Edge> edgeList = new LinkedList<Edge>();
+        Status status = this.startStatus;
+
+        Stack<Status> statusStack = new Stack<Status>();
+        statusStack.push(status);
+        statusMap.put(status, index++);
+
+        int maxEdgeNum = 0; //保存edge最大的matchContent
+
+        //获取到所有的status和edge
+        while(!statusStack.empty())
+        {
+            status = statusStack.pop();
+            LinkedList<Edge> edgeList2 = status.getAllOutEdge();
+            edgeList.addAll(edgeList2);
+            for(Edge eL : edgeList2)
+            {
+                if(maxEdgeNum < eL.matchContent)
+                {
+                    maxEdgeNum = eL.matchContent;
+                }
+                if(!statusMap.containsKey(eL.end))
+                {
+                    statusMap.put(eL.end, index++);
+                    statusStack.push(eL.end);
+                }
+            }
+        }
+
+        this.finalStatus = new boolean[statusMap.size()];
+        this.dfa = new int[statusMap.size()][maxEdgeNum + 1];
+
+        //初始化
+        for(int i = 0; i < dfa.length; i++)
+        {
+            for(int j = 0; j < dfa[i].length; j++)
+            {
+                dfa[i][j] = -1;
+            }
+        }
+
+        //设置finsl status
+        for(Map.Entry<Status, Integer>s : statusMap.entrySet())
+        {
+            if (s.getKey().isFinalStatus())
+            {
+                this.finalStatus[s.getValue()] = true;
+            }
+        }
+
+        //设置dfa二维数组
+        for(Edge eg : edgeList)
+        {
+            //设置每个坐标所示的下一个结点
+            this.dfa[statusMap.get(eg.start)][eg.matchContent] = statusMap.get(eg.end);
+        }
+
+        return true;
+    }
 
     boolean showDFA(Status startStatus)
     {
@@ -555,10 +622,46 @@ public class DFA
         }
         return true;
     }
-	
-	public static void main(String[] args)
-	{
-        String s = "a[a-z]*";
-        DFA dfa = new DFA(s);
-	}
+
+    public int matchDfa(String input)
+    {
+        int lastFinalLength = -1;
+        int status = 0;
+        int index = 0;
+        while(status != -1)
+        {
+            if(this.finalStatus[status])
+            {
+                lastFinalLength = index;
+            }
+            if(index >= input.length())
+            {
+                break;
+            }
+            status = dfa[status][this.charClass[input.charAt(index++)]];
+        }
+        return lastFinalLength;
+    }
+
+	// public static void main(String[] args)
+	// {
+        // String s = "\\d{6,11}";
+        // DFA dfa = new DFA(s);
+        // String input = "69426052618358332479";
+        // int begin = 0;
+        // int length = 0;
+        // while(begin < input.length())
+        // {
+            // length = dfa.matchDfa(input.substring(begin));
+            // if(length > 0)
+            // {
+                // System.out.println(input.substring(begin, begin + length));
+                // begin += length;
+            // }
+            // else
+            // {
+                // begin++;
+            // }
+        // }
+	// }
 }
