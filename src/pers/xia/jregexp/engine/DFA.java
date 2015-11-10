@@ -26,6 +26,7 @@ public class DFA
         this.input = input;
         this.createGrammerTree();
         this.createENFA();
+        // this.showDFA(this.startStatus);
         this.createNFA();
         this.createDFA();
         this.createDfaTable();
@@ -145,9 +146,14 @@ public class DFA
 
         if(e == -1)
         {
+            SES ses2 = aa.copySelf();
+            ses2 = connWithChoose(ses2);
             Edge edge = new Edge(-1);
-            a.startS.connInEdge(edge);
-            a.endS.connOutEdge(edge);
+            ses2.startS.connInEdge(edge);
+            ses2.endS.connOutEdge(edge);
+            a = connWithAnd(a, ses2);
+            // a.startS.connInEdge(edge);
+            // a.endS.connOutEdge(edge);
             return a;
         }
 

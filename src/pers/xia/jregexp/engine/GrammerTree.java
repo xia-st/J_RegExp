@@ -12,35 +12,35 @@ import java.util.Comparator;
 
 public class GrammerTree
 {
-    //为什么Java中enum类型不能定义在函数内部？？！！！明明内部类都能创建！！！
-    //Location只在splitMulti中使用，FRONT表示一个字符范围的开头，BELOW表示结尾
-    //BOTH表示同时在两边存在
+    // 为什么Java中enum类型不能定义在函数内部？？！！！明明内部类都能创建！！！
+    // Location只在splitMulti中使用，FRONT表示一个字符范围的开头，BELOW表示结尾
+    // BOTH表示同时在两边存在
     private enum Location{FRONT, BELOW, BOTH};
 
     private static final Logger log =
         Logger.getLogger(GrammerTree.class.getName());
 //    Stack<Character> inputStack = new Stack<Character>();
     String reString;
-	public Node head = null;
+    public Node head = null;
     public int[] charClass = null;
-	Stack<Node> resultStack = new Stack<Node>();
+    Stack<Node> resultStack = new Stack<Node>();
     private int cur = 0;
 
-	GrammerTree(String input)
-	{
+    GrammerTree(String input)
+    {
         log.setLevel(Level.ALL);
-        
+
         this.reString = input;
         this.cur = this.reString.length() - 1;
-		if (!this.createGrammerTree())
-		{
+        if (!this.createGrammerTree())
+        {
             log.warning("ERROR");
         }
-	}
+    }
 
     char getNextC()
     {
-        if(cur < 0)   
+        if(cur < 0)
         {
             return '\0';
         }
@@ -48,7 +48,7 @@ public class GrammerTree
     }
 
     boolean backupC(char c)
-    { 
+    {
         if (c == '\0')
         {
             return true;
@@ -85,14 +85,14 @@ public class GrammerTree
 
         //将mc中的数据按照第一个值由小到大进行排序
         Collections.sort(mc, new Comparator<Integer []>()
-		{
+        {
 
-			@Override
-			public int compare(Integer[] o1, Integer[] o2)
-			{
-				return o1[0] - o2[0];
-			}
-		});
+            @Override
+            public int compare(Integer[] o1, Integer[] o2)
+            {
+                return o1[0] - o2[0];
+            }
+        });
 
         //找分割点，分割块中所有的数据拿出来然后从小到大分割
         int maxNum = mc.get(0)[1];
@@ -101,7 +101,7 @@ public class GrammerTree
             if(mc.get(i)[0] <= maxNum)
             {
                 maxNum = maxNum > mc.get(i)[1] ? maxNum : mc.get(i)[1];
-                
+
                 //将mc中的两端的值放入到numMap中
                 if(numMap.containsKey(mc.get(i)[0]))
                 {
@@ -235,7 +235,7 @@ public class GrammerTree
                 // 的操作，第三种情况存在add mc1.get(j)[0] = sc.get(i)+1的情况
                 if(sc.get(i) <= mc1.get(j)[1])
                 {
-                    if(sc.get(i) > mc1.get(j)[0]) 
+                    if(sc.get(i) > mc1.get(j)[0])
                         mc2.add(new Integer[]{mc1.get(j)[0], sc.get(i)-1});
 
                     mc2.add(new Integer[]{sc.get(i), sc.get(i)});
@@ -375,8 +375,8 @@ public class GrammerTree
                     if(node.nodeType() == NodeType.MULTICHARS)
                     {
                         //将类型强制转换为Integer类型，方便接下来的操作
-                        multiChars.add(new Integer[]{(int)node.value, 
-                        		(int)node.value2});
+                        multiChars.add(new Integer[]{(int)node.value,
+                            (int)node.value2});
                         continue;
                     }
 
@@ -404,7 +404,7 @@ public class GrammerTree
                 {
                     //XXX java默认采用unicode编码，为两个字节，如果改为utf-8的话则会
                     //变成3个字节，这里假设了长度为2个字节
-                    antiList.add(new Integer[]{minNum, 65535}); 
+                    antiList.add(new Integer[]{minNum, 65535});
                 }
 
                 //拼接结点
@@ -492,7 +492,7 @@ public class GrammerTree
         }
         return true;
     }
-    
+
     //将生成的树转化为用数字表示，并生成一个charClass保存数字和字符的转换关系
     public boolean simplify()
     {
@@ -505,7 +505,7 @@ public class GrammerTree
 
         HashSet<Integer> singleChars = new HashSet<Integer>();  //保存单个的字符
         HashSet<Integer[]> multiChars = new HashSet<Integer[]>();   //保存范围字符
-        
+
         Stack<Node> stack = new Stack<Node>();
 
         Node node = this.head;
@@ -634,7 +634,7 @@ public class GrammerTree
                     return false;
                 }
             }
-        } 
+        }
 
         //开始生成charClass并改为数字
         this.charClass = new int[65536]; //内部元素默认值为0
@@ -654,16 +654,16 @@ public class GrammerTree
 
         return true;
     }
-	
-	private boolean createGrammerTree()
-	{
-		Node node = null;
-		Node preNode = null;
-		Node optNode = null;
+
+    private boolean createGrammerTree()
+    {
+        Node node = null;
+        Node preNode = null;
+        Node optNode = null;
         char c1, c2; //保存预读字符
-		
-		while (true)
-		{
+
+        while (true)
+        {
             char c = this.getNextC();
             boolean haveNode = false;
             node = null;
@@ -745,40 +745,40 @@ public class GrammerTree
                 haveNode = true;
                 node = new Node(Operator.DOT);
             }
-			
-			if (c == '(' )
-			{
-				if (resultStack.size() < 2) // 至少要有一个Node和一个右括号两个元素
-				{
-					head = null;
+
+            if (c == '(' )
+            {
+                if (resultStack.size() < 2) // 至少要有一个Node和一个右括号两个元素
+                {
+                    head = null;
                     log.warning("缺少右括号或者括号内元素");
-					return false;
-				}
-				
-				//如果顶端是一个操作符的话说明字符串的左括号前面跟着操作符，不合法
+                    return false;
+                }
+
+                //如果顶端是一个操作符的话说明字符串的左括号前面跟着操作符，不合法
                 node = resultStack.pop();
-				if((node.nodeType() == NodeType.OPERATOR || 
+                if((node.nodeType() == NodeType.OPERATOR ||
                             node.nodeType() == NodeType.RANGE) &&
                         !node.isTree()) //这里包括了右括号的判断
-				{
-					this.head = null;
+                {
+                    this.head = null;
                     log.warning("小括号不匹配");
-					return false;
-				}
-				
-				while(!resultStack.empty())
-				{
-					preNode = resultStack.pop();
+                    return false;
+                }
 
-					if (preNode.nodeType() == NodeType.OPERATOR || 
+                while(!resultStack.empty())
+                {
+                    preNode = resultStack.pop();
+
+                    if (preNode.nodeType() == NodeType.OPERATOR ||
                             preNode.nodeType() == NodeType.RANGE)
-					{
-						if(preNode.value == Operator.RP)    //遇到右括号说明匹配完成
-						{
+                    {
+                        if(preNode.value == Operator.RP)    //遇到右括号说明匹配完成
+                        {
                             // 生成的树可能还需要与后面的节点或者操作符进行合并
                             haveNode = true; //XXX 加了一个flag，UGLY
-							break;
-						}
+                            break;
+                        }
                         if(preNode.value == Operator.OR)
                         {
                             preNode = resultStack.pop();
@@ -786,62 +786,62 @@ public class GrammerTree
                             // 在|符号后面不能跟着其他操作符。在其他代码正确无误情况下不可能进入这个if语句。
                             if((preNode.nodeType() == NodeType.OPERATOR ||
                                         preNode.nodeType() == NodeType.RANGE) &&
-                                    !preNode.isTree()) 
+                                    !preNode.isTree())
                             {
                                 log.warning("operator append OR");
                                 head = null;
                                 return false;
                             }
-                            
+
                             optNode = new Node(Operator.OR);
                             optNode.setLChild(node);
                             optNode.setRChild(preNode);
                             node = optNode;
                             continue;
                         }
-						
-						if (!preNode.isTree())
-						{
-							preNode.setLChild(node);
+
+                        if (!preNode.isTree())
+                        {
+                            preNode.setLChild(node);
                             node = preNode;
-							continue;
-						}
+                            continue;
+                        }
                         log.warning("can't step into here in normal");
-					}
-					optNode = new Node(Operator.AND);
-					optNode.setLChild(node);
-					optNode.setRChild(preNode);
+                    }
+                    optNode = new Node(Operator.AND);
+                    optNode.setLChild(node);
+                    optNode.setRChild(preNode);
                     node = optNode;
-				}
-				
-				//如果没有产生节点说明括号不匹配，语法错误
-				if (!haveNode)
-				{
-					head = null;
+                }
+
+                //如果没有产生节点说明括号不匹配，语法错误
+                if (!haveNode)
+                {
+                    head = null;
                     log.warning("不存在右括号");
-					return false;
-				}
-			}
-			
-			if (c == ')')
-			{
-				optNode = new Node(Operator.RP);
-				resultStack.push(optNode);
-				continue;
-			}
-			
-			//不允许单独获取到左中括号
-			if (c == '[')
-			{
+                    return false;
+                }
+            }
+
+            if (c == ')')
+            {
+                optNode = new Node(Operator.RP);
+                resultStack.push(optNode);
+                continue;
+            }
+
+            //不允许单独获取到左中括号
+            if (c == '[')
+            {
                 log.warning("获取到了单独的左中括号");
-				this.head = null;
-				return false;
-			}
-			
-			if (c == ']')
-			{
+                this.head = null;
+                return false;
+            }
+
+            if (c == ']')
+            {
                 haveNode = true; //在方括号内的都是有效结点
-                
+
                 HashSet<Character> oneChars = new HashSet<Character>();
                 HashSet<char[]> multiChars = new HashSet<char[]>();
                 ArrayList<Character> list = new ArrayList<Character>(); //保存括号内字符
@@ -873,7 +873,7 @@ public class GrammerTree
                 }
 
                 // if the first of character in [], we should set
-                // the 
+                // the
                 boolean reverse = false;
                 if(list.get(list.size()-1) == '^')
                 {
@@ -954,17 +954,17 @@ public class GrammerTree
                     notNode.setLChild(node);
                     node = notNode;
                 }
-			}
-			
-			if (c == '{')
-			{
+            }
+
+            if (c == '{')
+            {
                 log.warning("获取到了单独的左大括号");
                 this.head = null;
                 return false;
-			}
-			
-			if (c == '}')
-			{
+            }
+
+            if (c == '}')
+            {
                 int start = 0;  //起始位置。
                 int end = 0;   //结束位置
 
@@ -1024,7 +1024,7 @@ public class GrammerTree
                     }
                     start += (c - '0') * i;
                 }
-                
+
                 if(c == '\0')
                 {
                     log.warning("表达式不完整");
@@ -1032,29 +1032,29 @@ public class GrammerTree
                     return false;
                 }
 
-				optNode = new Node(start, end);
-				resultStack.push(optNode);
-				continue;
-			}
-			
-			if (c == '|')
-			{
-				node = resultStack.get(resultStack.size() - 1);
-				if((node.nodeType() == NodeType.OPERATOR ||
+                optNode = new Node(start, end);
+                resultStack.push(optNode);
+                continue;
+            }
+
+            if (c == '|')
+            {
+                node = resultStack.get(resultStack.size() - 1);
+                if((node.nodeType() == NodeType.OPERATOR ||
                             node.nodeType() == NodeType.RANGE)
                         && !node.isTree())
-				{
+                {
                     log.warning("在|后面跟着其他操作符");
-					this.head = null;
-					return false;
-				}
+                    this.head = null;
+                    return false;
+                }
 
-				optNode = new Node(Operator.OR);
-				resultStack.push(optNode);
-				continue;
-			}
-			if (c == '+')
-			{
+                optNode = new Node(Operator.OR);
+                resultStack.push(optNode);
+                continue;
+            }
+            if (c == '+')
+            {
                 if(!resultStack.empty())
                 {
                     node = resultStack.get(resultStack.size() - 1);
@@ -1067,13 +1067,13 @@ public class GrammerTree
                     }
                 }
 
-				optNode = new Node(Operator.PLUS);
-				resultStack.push(optNode);
-				continue;
-			}
-			
-			if (c == '*')
-			{
+                optNode = new Node(Operator.PLUS);
+                resultStack.push(optNode);
+                continue;
+            }
+
+            if (c == '*')
+            {
                 if(!resultStack.empty())
                 {
                     node = resultStack.get(resultStack.size() - 1);
@@ -1085,13 +1085,13 @@ public class GrammerTree
                     }
                 }
 
-				optNode = new Node(Operator.STAR);
-				resultStack.push(optNode);
-				continue;
-			}
+                optNode = new Node(Operator.STAR);
+                resultStack.push(optNode);
+                continue;
+            }
 
-			if (c == '?')
-			{
+            if (c == '?')
+            {
                 if(!resultStack.empty())
                 {
                     node = resultStack.get(resultStack.size() - 1);
@@ -1103,43 +1103,43 @@ public class GrammerTree
                     }
                 }
 
-				optNode = new Node(Operator.QM);
-				resultStack.push(optNode);
-				continue;
-			}
+                optNode = new Node(Operator.QM);
+                resultStack.push(optNode);
+                continue;
+            }
 
             if(!haveNode)
             {
                 //运行到这里说明c为普通字符，将其转换为节点
-                node = new Node(c); 
+                node = new Node(c);
             }
 
-			if(resultStack.empty())
-			{
-				resultStack.push(node);
-				continue;
-			}
-			
-			preNode = resultStack.pop();
-			
-			if((preNode.nodeType() == NodeType.OPERATOR ||
+            if(resultStack.empty())
+            {
+                resultStack.push(node);
+                continue;
+            }
+
+            preNode = resultStack.pop();
+
+            if((preNode.nodeType() == NodeType.OPERATOR ||
                         preNode.nodeType() == NodeType.RANGE)
                     && !preNode.isTree())
-			{
-				if (preNode.value == Operator.RP ||
+            {
+                if (preNode.value == Operator.RP ||
                         preNode.value == Operator.OR)
-				{
-					resultStack.push(preNode);
-					resultStack.push(node);
-					continue;
-				}
+                {
+                    resultStack.push(preNode);
+                    resultStack.push(node);
+                    continue;
+                }
                 preNode.setLChild(node);
 
                 node = preNode;
                 if(resultStack.empty())
                 {
-                	resultStack.push(node);
-                	continue;
+                    resultStack.push(node);
+                    continue;
                 }
                 preNode = resultStack.pop();
 
@@ -1159,44 +1159,44 @@ public class GrammerTree
                     head = null;
                     return false;
                 }
-			}
-			optNode = new Node(Operator.AND);
-			optNode.setLChild(node);
-			optNode.setRChild(preNode);
-			resultStack.push(optNode);
-		}
-		
+            }
+            optNode = new Node(Operator.AND);
+            optNode.setLChild(node);
+            optNode.setRChild(preNode);
+            resultStack.push(optNode);
+        }
+
         //输入栈中的数据处理完毕，接下来处理合并结果栈中的数据
-		if (resultStack.empty())
-		{
-			this.head = null;
-			return false;
-		}
-		
-		//如果顶端是一个操作符的话说明字符串的第一个字符为操作符，不合法
+        if (resultStack.empty())
+        {
+            this.head = null;
+            return false;
+        }
+
+        //如果顶端是一个操作符的话说明字符串的第一个字符为操作符，不合法
         node = resultStack.pop();
-		if((node.nodeType() == NodeType.OPERATOR ||
+        if((node.nodeType() == NodeType.OPERATOR ||
                     node.nodeType() == NodeType.RANGE)
                && !node.isTree())
-		{
-			this.head = null;
-			return false;
-		}
-		
-		//对栈中剩余的结点（树）进行合并
-		while (!resultStack.empty())
-		{
-			preNode = resultStack.pop();
-			
-			if (!preNode.isTree() && 
-                    (preNode.nodeType() == NodeType.OPERATOR || 
+        {
+            this.head = null;
+            return false;
+        }
+
+        //对栈中剩余的结点（树）进行合并
+        while (!resultStack.empty())
+        {
+            preNode = resultStack.pop();
+
+            if (!preNode.isTree() &&
+                    (preNode.nodeType() == NodeType.OPERATOR ||
                         preNode.nodeType() == NodeType.OPERATOR))
-			{
-				if (preNode.value == Operator.RP)
-				{
-					this.head = null;
-					return false;
-				}
+            {
+                if (preNode.value == Operator.RP)
+                {
+                    this.head = null;
+                    return false;
+                }
                 if (preNode.value == Operator.OR)
                 {
                     if(resultStack.empty())
@@ -1209,7 +1209,7 @@ public class GrammerTree
 
                     if((preNode.nodeType() == NodeType.OPERATOR ||
                                 preNode.nodeType() == NodeType.RANGE)
-                            && !preNode.isTree()) 
+                            && !preNode.isTree())
                     {
                         log.warning("operator append OR");
                         head = null;
@@ -1222,77 +1222,77 @@ public class GrammerTree
                     node = optNode;
                     continue;
                 }
-				
-				if (!preNode.isTree())
-				{
-					preNode.setLChild(node);
+
+                if (!preNode.isTree())
+                {
+                    preNode.setLChild(node);
                     node = preNode;
-					continue;
-				}
-			}
-				
-			optNode = new Node(Operator.OR);
-			optNode.setLChild(node);
-			optNode.setRChild(preNode);
+                    continue;
+                }
+            }
+
+            optNode = new Node(Operator.OR);
+            optNode.setLChild(node);
+            optNode.setRChild(preNode);
             node = optNode;
-		}
-		
-		this.head = node;
-		return true;
-	}
-	
-	void showTree()
-	{
-		ArrayList<ArrayList<Node>> lists = new ArrayList<ArrayList<Node>>();
-		ArrayList<Node> currentList = new ArrayList<Node>();
-		currentList.add(this.head);
-		lists.add(currentList);
-		boolean flag = true;
-		while(flag)
-		{
-			flag = false;
-			currentList = new ArrayList<Node>();
-			ArrayList<Node> lastList = lists.get(lists.size() - 1);
-			for(Node node : lastList)
-			{
-				if (node != null)
-				{
-					currentList.add(node.getLChild());
-					currentList.add(node.getRChild());
-					if (node.getLChild() != null || node.getRChild() != null)
-						flag = true;
-				}
-				else
-				{
-					currentList.add(null);
-					currentList.add(null);
-				}
-			}
-			
-			if(flag)
-			{
-				lists.add(currentList);
-			}
-		}
-		
-		for(int i = 0; i < lists.size(); i++)
-		{
-			for(int j = 0; j < Math.pow(2, lists.size() - i - 1) - 1; j++)
-				System.out.print("\t");
-			for(Node node : lists.get(i))
-			{
-				if (node != null)
-				{
-					System.out.print(node + "\t");					
-				}
-				else
-				{
-					System.out.print("\t");
-				}
-				for(int j = 0; j < Math.pow(2, lists.size() - i) - 1; j++)
-					System.out.print("\t");
-			}
-			System.out.println();
-		}		
-	}
+        }
+
+        this.head = node;
+        return true;
+    }
+
+    void showTree()
+    {
+        ArrayList<ArrayList<Node>> lists = new ArrayList<ArrayList<Node>>();
+        ArrayList<Node> currentList = new ArrayList<Node>();
+        currentList.add(this.head);
+        lists.add(currentList);
+        boolean flag = true;
+        while(flag)
+        {
+            flag = false;
+            currentList = new ArrayList<Node>();
+            ArrayList<Node> lastList = lists.get(lists.size() - 1);
+            for(Node node : lastList)
+            {
+                if (node != null)
+                {
+                    currentList.add(node.getLChild());
+                    currentList.add(node.getRChild());
+                    if (node.getLChild() != null || node.getRChild() != null)
+                        flag = true;
+                }
+                else
+                {
+                    currentList.add(null);
+                    currentList.add(null);
+                }
+            }
+
+            if(flag)
+            {
+                lists.add(currentList);
+            }
+        }
+
+        for(int i = 0; i < lists.size(); i++)
+        {
+            for(int j = 0; j < Math.pow(2, lists.size() - i - 1) - 1; j++)
+                System.out.print("\t");
+            for(Node node : lists.get(i))
+            {
+                if (node != null)
+                {
+                    System.out.print(node + "\t");
+                }
+                else
+                {
+                    System.out.print("\t");
+                }
+                for(int j = 0; j < Math.pow(2, lists.size() - i) - 1; j++)
+                    System.out.print("\t");
+            }
+            System.out.println();
+        }
+    }
 }
