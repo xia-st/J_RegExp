@@ -140,7 +140,7 @@ public class Status
     }
 
     @SuppressWarnings("unchecked")
-	LinkedList<Edge> getAllInEdge()      
+	LinkedList<Edge> getAllInEdge()
     {
         return (LinkedList<Edge>)this.inEdge.clone();
     }

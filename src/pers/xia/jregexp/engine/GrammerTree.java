@@ -447,6 +447,68 @@ public class GrammerTree
         }
         return true;
     }
+    
+    private Node getLeftNode(Node node)
+    {
+        Node fatherNode = node.fatherNode;
+        while(fatherNode.getLChild() == node && fatherNode != null)
+        {
+            fatherNode = fatherNode.fatherNode;
+        }
+        if(fatherNode == null)
+        {
+            return null;
+        }
+        Node node2 = fatherNode.getLChild();
+        while(node2.nodeType() == NodeType.OPERATOR ||
+                node2.nodeType() == NodeType.RANGE)
+        {
+            if(node2.getRChild() != null)
+            {
+                node2 = node2.getRChild();
+                continue;
+            }
+            if(node2.getLChild() != null)
+            {
+                node2 = node2.getLChild();
+                continue;
+            }
+            log.warning("Strange Error");
+            return null;
+        }
+        return node2;
+    }
+
+    private Node getRightNode(Node node)
+    {
+        Node fatherNode = node.fatherNode;
+        while(fatherNode.getRChild() == node && fatherNode != null)
+        {
+            fatherNode = fatherNode.fatherNode;
+        }
+        if(fatherNode == null)
+        {
+            return null;
+        }
+        Node node2 = fatherNode.getRChild();
+        while(node2.nodeType() == NodeType.OPERATOR ||
+                node2.nodeType() == NodeType.RANGE)
+        {
+            if(node2.getLChild() != null)
+            {
+                node2 = node2.getLChild();
+                continue;
+            }
+            if(node2.getRChild() != null)
+            {
+                node2 = node2.getRChild();
+                continue;
+            }
+            log.warning("Strange Error");
+            return null;
+        }
+        return node2;
+    }
 
     private boolean dealMetaChar()
     {
